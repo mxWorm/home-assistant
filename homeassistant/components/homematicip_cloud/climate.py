@@ -128,8 +128,7 @@ class HomematicipHeatingGroup(HomematicipGenericDevice, ClimateDevice):
                 AbsenceType.PARTY,
             ]:
                 return PRESET_ECO
-
-        return PRESET_NONE
+        return self._device.activeProfile.name
 
     @property
     def preset_modes(self):
@@ -137,7 +136,13 @@ class HomematicipHeatingGroup(HomematicipGenericDevice, ClimateDevice):
 
         Requires SUPPORT_PRESET_MODE.
         """
-        return [PRESET_NONE, PRESET_BOOST]
+        profiles = []
+        profiles.append(PRESET_NONE)
+        for profile in self._device.profiles:
+            if profile.name != '':
+                profiles.append(profile.name)
+        profiles.append(PRESET_BOOST)
+        return profiles
 
     @property
     def min_temp(self) -> float:
@@ -169,6 +174,12 @@ class HomematicipHeatingGroup(HomematicipGenericDevice, ClimateDevice):
             await self._device.set_boost(False)
         if preset_mode == PRESET_BOOST:
             await self._device.set_boost()
+        index = 0
+        for profile in self._device.profiles:
+            if profile.name == preset_mode:
+                await self._device.set_active_profile(index)
+                return
+            index = index + 1
 
 
 def _get_first_heating_thermostat(heating_group: AsyncHeatingGroup):
